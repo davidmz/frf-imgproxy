@@ -1,0 +1,25 @@
+services:
+  caddy:
+    container_name: 'caddy'
+    image: 'caddy:2.6'
+    environment:
+      REMOTE_ORIGIN: '${REMOTE_ORIGIN:-https://freefeed-storage-test.s3.eu-west-1.amazonaws.com}'
+    ports:
+      - '8080:${HTTP_PORT:-8080}'
+    volumes:
+      - './Caddyfile:/etc/caddy/Caddyfile'
+      - './webroot:/etc/caddy/webroot'
+      - './caddydata:/data'
+  imgproxy:
+    container_name: 'imgproxy'
+    image: 'darthsim/imgproxy:v3'
+    expose:
+      - "8080"
+    environment:
+      IMGPROXY_ONLY_PRESETS: 'true'
+      IMGPROXY_PRESETS: 'thumbnails=s:525:175/sh:0.5,thumbnails2=s:1050:350/sh:0.3,2k=s:2000:2000'
+      IMGPROXY_USE_ETAG: 'true'
+      IMGPROXY_MAX_SRC_RESOLUTION: 40
+      IMGPROXY_JPEG_PROGRESSIVE: 'true'
+      IMGPROXY_PNG_INTERLACED: 'true'
+      IMGPROXY_MAX_ANIMATION_FRAMES: 100

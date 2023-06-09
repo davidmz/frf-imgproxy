@@ -1,0 +1,59 @@
+http://localhost:8080
+root * /etc/caddy/webroot
+
+# Matchers
+
+@thumb {
+	path_regexp thumb ^/attachments/(?P<preset>\w+)/(?P<uid>[\w-]+)\.(?P<ext>jpg|webp|png|gif)$
+}
+
+@other_files {
+	path /attachments/*
+}
+
+@static {
+	path / /favicon.svg
+}
+
+# Handlers
+
+handle @thumb {
+	rewrite * "/s/{re.thumb.preset}/plain/{$REMOTE_ORIGIN}/attachments/{re.thumb.uid}.{re.thumb.ext}@{query.format}"
+	reverse_proxy {
+		to imgproxy:8080
+
+		@aws_error status 403
+		handle_response @aws_error {
+			rewrite * /not-found.html
+			file_server {
+				status 404
+			}
+		}
+	}
+}
+
+handle @other_files {
+	reverse_proxy {
+		to "{$REMOTE_ORIGIN}"
+		header_up Host {upstream_hostport}
+
+		@aws_error status 403
+		handle_response @aws_error {
+			rewrite * /not-found.html
+			file_server {
+				status 404
+			}
+		}
+	}
+}
+
+handle @static {
+	file_server
+}
+
+handle {
+	rewrite * /not-found.html
+	file_server {
+		status 404
+	}
+}
