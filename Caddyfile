@@ -1,59 +1,81 @@
-http://localhost:8080
-root * /etc/caddy/webroot
+# Snippets
 
-# Matchers
+(proxy_errors) {
+	@aws_error status 403 404
+	@timeout_error status 504
 
-@thumb {
-	path_regexp thumb ^/attachments/(?P<preset>\w+)/(?P<uid>[\w-]+)\.(?P<ext>jpg|webp|png|gif)$
-}
+	handle_response @aws_error {
+		rewrite * /not-found.html
+		file_server {
+			status {rp.status_code}
+		}
+	}
 
-@other_files {
-	path /attachments/*
-}
-
-@static {
-	path / /favicon.svg
-}
-
-# Handlers
-
-handle @thumb {
-	rewrite * "/s/{re.thumb.preset}/plain/{$REMOTE_ORIGIN}/attachments/{re.thumb.uid}.{re.thumb.ext}@{query.format}"
-	reverse_proxy {
-		to imgproxy:8080
-
-		@aws_error status 403
-		handle_response @aws_error {
-			rewrite * /not-found.html
-			file_server {
-				status 404
-			}
+	handle_response @timeout_error {
+		rewrite * /timeout.html
+		file_server {
+			status {rp.status_code}
 		}
 	}
 }
 
-handle @other_files {
-	reverse_proxy {
-		to "{$REMOTE_ORIGIN}"
-		header_up Host {upstream_hostport}
+# Site
 
-		@aws_error status 403
-		handle_response @aws_error {
-			rewrite * /not-found.html
-			file_server {
-				status 404
-			}
+http://localhost:8080 {
+	root * /etc/caddy/webroot
+
+	# Matchers
+
+	@thumbs {
+		path_regexp thumb ^/attachments/(?P<preset>\w+)/(?P<uid>[\da-f-]+)\.(?P<ext>jpg|webp|png|gif)$
+	}
+
+	@profile_pics {
+		path_regexp profile ^/profilepics/(?P<uid>[0-9a-f-]+)_(?P<size>50|75)\.(?P<ext>jpg|webp|png|gif)$
+	}
+
+	@other_files {
+		path /attachments/*
+	}
+
+	@static {
+		path / /favicon.svg
+	}
+
+	# Handlers
+
+	handle @thumbs {
+		rewrite * "/s/{re.thumb.preset}/plain/{$REMOTE_ORIGIN}/attachments/{re.thumb.uid}.{re.thumb.ext}@{query.format}"
+		reverse_proxy {
+			to imgproxy:8080
+			import proxy_errors
 		}
 	}
-}
 
-handle @static {
-	file_server
-}
+	handle @profile_pics {
+		rewrite * "/s/square{re.profile.size}/plain/{$REMOTE_ORIGIN}/profilepics/{re.profile.uid}_75.{re.profile.ext}@{query.format}"
+		reverse_proxy {
+			to imgproxy:8080
+			import proxy_errors
+		}
+	}
 
-handle {
-	rewrite * /not-found.html
-	file_server {
-		status 404
+	handle @other_files {
+		reverse_proxy {
+			to "{$REMOTE_ORIGIN}"
+			header_up Host {upstream_hostport}
+			import proxy_errors
+		}
+	}
+
+	handle @static {
+		file_server
+	}
+
+	handle {
+		rewrite * /not-found.html
+		file_server {
+			status 404
+		}
 	}
 }
