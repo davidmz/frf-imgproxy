@@ -39,7 +39,7 @@ http://localhost:8080 {
 	}
 
 	@static {
-		path / /favicon.svg
+		path / /favicon.svg /favicon.ico
 	}
 
 	# Handlers
@@ -69,6 +69,7 @@ http://localhost:8080 {
 	}
 
 	handle @static {
+		rewrite /favicon.ico /favicon.svg
 		file_server
 	}
 
