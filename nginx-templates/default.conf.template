@@ -1,0 +1,43 @@
+server {
+  listen 80 default_server;
+  server_name nginx;
+
+  root /usr/share/nginx/html;
+
+  proxy_intercept_errors on;
+  error_page 403 404 504 /not-found.html;
+
+  location / {
+  }
+
+  location = /favicon.ico {
+    rewrite ^/favicon.ico /favicon.svg;
+  }
+
+  location = /not-found.html {
+    internal;
+  }
+
+  location /attachments/ {
+    location ~ ^/attachments/(\w+)/([\da-f-]+)\.(jpg|webp|png|gif)$ {
+      rewrite
+      ^/attachments/(\w+)/([\da-f-]+)\.(jpg|webp|png|gif)$
+      /s/$1/plain/${REMOTE_ORIGIN}/attachments/$2.$3@$arg_format;
+
+      proxy_pass http://imgproxy:8080;
+      break;
+    }
+
+    proxy_pass ${REMOTE_ORIGIN};
+    break;
+  }
+
+  location /profilepics/ {
+    rewrite
+    ^/profilepics/([\da-f-]+)_(50|75)\.(jpg|webp|png|gif)$
+    /s/square$2/plain/${REMOTE_ORIGIN}/profilepics/$1_75.$3@$arg_format;
+
+    proxy_pass http://imgproxy:8080;
+    break;
+  }
+}

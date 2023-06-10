@@ -1,15 +1,14 @@
 services:
-  caddy:
-    container_name: 'caddy'
-    image: 'caddy:2.6'
+  nginx:
+    container_name: 'nginx'
+    image: 'nginx:1.25'
     environment:
       REMOTE_ORIGIN: '${REMOTE_ORIGIN:-https://freefeed-storage-test.s3.eu-west-1.amazonaws.com}'
     ports:
-      - '8080:${HTTP_PORT:-8080}'
+      - '${HTTP_PORT:-8080}:80'
     volumes:
-      - './Caddyfile:/etc/caddy/Caddyfile'
-      - './webroot:/etc/caddy/webroot'
-      - './caddydata:/data'
+      - './nginx-templates:/etc/nginx/templates'
+      - './webroot:/usr/share/nginx/html'
   imgproxy:
     container_name: 'imgproxy'
     image: 'darthsim/imgproxy:v3'
