@@ -1,9 +1,9 @@
 services:
   nginx:
     container_name: 'nginx'
-    image: 'nginx:1.27'
+    image: 'nginx:1.24'
     environment:
-      REMOTE_ORIGIN: '${REMOTE_ORIGIN:-https://stable-media-r2.freefeed.net}'
+      REMOTE_ORIGIN: '${REMOTE_ORIGIN:-http://stable-media-r2.freefeed.net}'
     ports:
       - '${HTTP_PORT:-8080}:80'
     volumes:
